@@ -36,7 +36,7 @@ bool ClioMK3::init(ICANBus* canbus){
         ClioMK3_LOG(error)<<"Failed to get arbiter";
         return false;
      }
-		
+
 }
 
 QList<QWidget *> ClioMK3::widgets()
@@ -63,6 +63,8 @@ void AFFA2EmulatorDisplay::getText(QByteArray frame) {
     bool selected, fullscreen;
     char c;
     QString text;
+
+    ClioMK3_LOG(info)<<"frame recieved";
 
     if (frame.at(0) == 0x70) { /* Enregistrement des fonctionnalités */
         //_packetSendReply(frame);
@@ -132,27 +134,29 @@ void AFFA2EmulatorDisplay::getText(QByteArray frame) {
             fullscreen = ((location & 0x02) == 0x02);
 
             if ((max > 0) && (fullscreen) && (!selected)) { /* Texte clignotant (np. NEWS -> RMF FM -> NEWS...) */
-
+               ClioMK3_LOG(info) << "texte clignotant " << text.toStdString() << " not selected";
             }
             else {
-
+               ClioMK3_LOG(info) << "else texte clignotant" << text.toStdString() << " selected";
             }
 
-            /*if ((max > 0) && (!fullscreen)) { /* Mode menu *
-                if (!_menuVisible) {
+            if ((max > 0) && (!fullscreen)) { /* Mode menu */
+                /*if (!_menuVisible) {
                     emit displayMenuShow(max + 1);
                     _menuVisible = true;
-                }
+                }*/
 
-                emit displayMenuItemUpdate(idx, text, selected);
+                //emit displayMenuItemUpdate(idx, text, selected);
+                ClioMK3_LOG(info) << "display menu item update " << text.toStdString() << " " << selected;
                 return;
             }
-            else { /* Menu invisible *
-                if (_menuVisible) {
+            else { /* Menu invisible */
+                ClioMK3_LOG(info)<<"menu invisible";
+                /*if (_menuVisible) {
                     emit displayMenuHide();
                     _menuVisible = false;
-                }
-            }*/
+                }*/
+            }
 
             if ((max == 0) && (selected)) { /* Texte brut */
                 emit displayTextChanged(text);
