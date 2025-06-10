@@ -9,6 +9,7 @@
 #include "openauto/Service/InputService.hpp"
 #include "AAHandler.hpp"
 #include "plugins/vehicle_plugin.hpp"
+#include "AFFA2EmulatorDisplay.hpp"
 
 #define ClioMK3_LOG(severity) BOOST_LOG_TRIVIAL(severity) << "[ClioMK3Plugin] "
 
@@ -41,27 +42,12 @@
 
 #define CAN_ID_REPLY_FLAG          0x400  /* Indicateur défini pour la réponse */
 
-class AFFA2EmulatorDisplay : public QObject
-{
-    
-    Q_OBJECT
-    
-    //private:
-
-    public:
-        AFFA2EmulatorDisplay() {};
-        //~AFFA2Emulator();
-        void getText(QByteArray payload);
-    signals:
-        void displayTextChanged(QString text);
-
-};
-
 class InfoWindow : public QWidget {
     Q_OBJECT
     public:
         InfoWindow(Arbiter &arbiter, QWidget *parent = nullptr);
         QLabel* text;
+        QLabel* menu;
 };
 
 class ClioMK3 : public QObject, VehiclePlugin
@@ -82,6 +68,9 @@ class ClioMK3 : public QObject, VehiclePlugin
 
     public slots:
       void updateText(QString text);
+      void updateMenu(QString text);
+      void showMenu();
+      void hideMenu();
 
 };
 
