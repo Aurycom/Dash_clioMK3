@@ -19,9 +19,12 @@ void AFFA2EmulatorDisplay::getText(QByteArray frame) {
         /* TODO!!! */
         //qDebug() << "DisplayEmulator: TODO: Set icons";
         //qDebug() << frame.at(3);
-        //iconsmask = frame.at(3);
-        //mode = frame.at(5);
-        //emit displayIconsChanged(iconsmask);
+        iconsmask = frame.at(2);
+        mode = frame.at(4);
+        AFFA2_LOG(info) << "icons1  "<<iconsmask;
+        AFFA2_LOG(info) << "mode1  "<<mode;
+        displayIconsChanged(iconsmask);
+	displayModeChanged(mode);
         //_packetSendReply(frame);
     }
     else if (frame.at(0) == 0x10) { /* Définir le texte */
@@ -32,7 +35,10 @@ void AFFA2EmulatorDisplay::getText(QByteArray frame) {
             iconsmask = frame.at(3);
             mode = frame.at(5);
             ptr = 6;
-            //emit displayIconsChanged(iconsmask);
+            displayIconsChanged(iconsmask);
+	    displayModeChanged(mode);
+            AFFA2_LOG(info) << "icons2  "<<iconsmask;
+            AFFA2_LOG(info) << "mode2  "<<mode;
         }
         else if (frame.at(1) == 0x19) { /* Texte uniquement */
             ptr = 3;
@@ -130,5 +136,59 @@ void AFFA2EmulatorDisplay::getText(QByteArray frame) {
         else {
             //_packetSendReply(frame, false);
         }
+    }
+}
+
+void AFFA2EmulatorDisplay::displayIconsChanged(int iconmask) {
+    QString icons;
+    bool news, rds, traffic;
+
+    if ((iconmask & DISPLAY_ICON_NO_NEWS) == 0) {
+        news = true;
+    }
+    else {
+        news = false;
+    }
+
+    if ((iconmask & DISPLAY_ICON_NO_AFRDS) == 0) { /* S'il y a AF-RDS, alors la source est certainement la radio */
+        icons += "AF-RDS";
+        rds = true;
+
+        /*if (_sourceCurrent != sourceFM) {
+            _sourceCurrent = sourceFM;
+            emit sourceChanged(_sourceCurrent);
+        }*/
+    }
+    else {
+        rds = false;
+    }
+
+    if ((iconmask & DISPLAY_ICON_NO_TRAFFIC) == 0) {
+        traffic = true;
+    }
+    else {
+        traffic = false;
+    }
+    AFFA2_LOG(info) << "sendIconsChanged";
+    emit radioIconsChanged(news, traffic, rds);
+}
+
+void AFFA2EmulatorDisplay::displayModeChanged(int iconmode) {
+    enum AFFA2Mode mode = AFFA2Mode::unknownMode;
+    if ((iconmode & (1 << 5)) == 0) {
+	    AFFA2_LOG(info) << "Manual Mode";
+        mode = AFFA2Mode::ManualMode;
+    }else if((iconmode & (1 << 1)) == 0){
+	    AFFA2_LOG(info) << "Preset Mode";
+        mode = AFFA2Mode::PresetMode;
+    }else if((iconmode & (1 << 5)) != 0 && (iconmode & (1 << 1)) != 0){
+	    AFFA2_LOG(info) << "Update List";
+        mode = AFFA2Mode::UpdateList;
+    }else{
+        mode=AFFA2Mode::unknownMode;
+    }
+    if(mode!=this->currentMode){
+        this->currentMode=mode;
+        emit modeChanged(this->currentMode);
     }
 }

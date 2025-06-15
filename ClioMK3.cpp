@@ -4,16 +4,49 @@
 
 InfoWindow::InfoWindow(Arbiter &arbiter, QWidget *parent) : QWidget(parent)
 {
-    /*QLabel* test = new QLabel("Test", this);*/
+
+    QVBoxLayout *globalLayout = new QVBoxLayout(this);
+
+    QHBoxLayout *layoutSource = new QHBoxLayout(this);
+    source = new QLabel("", this);
+    layoutSource->addWidget(source);
+    globalLayout->addLayout(layoutSource);
+
+    QHBoxLayout *layout = new QHBoxLayout(this);
     text = new QLabel("--", this);
     menu = new QLabel("", this);
     blink = new QLabel("", this);
     menu->setVisible(false);
     blink->setVisible(false);
-    QVBoxLayout *layout = new QVBoxLayout(this);
     layout->addWidget(text);
     layout->addWidget(menu);
     layout->addWidget(blink);
+    globalLayout->addLayout(layout);
+
+    QHBoxLayout *layoutRadioItems = new QHBoxLayout(this);
+    rds = new QLabel("AF-RDS", this);
+    rds->setVisible(false);
+    news = new QLabel("iNews", this);
+    news->setVisible(false);
+    traffic = new QLabel("iTraffic", this);
+    traffic->setVisible(false);
+    layoutRadioItems->addWidget(rds);
+    layoutRadioItems->addWidget(news);
+    layoutRadioItems->addWidget(traffic);
+    globalLayout->addLayout(layoutRadioItems);
+
+    QHBoxLayout *layoutModeItems = new QHBoxLayout(this);
+    updateListMode = new QLabel("Update List", this);
+    updateListMode->setVisible(false);
+    presetMode = new QLabel("Preset Mode", this);
+    presetMode->setVisible(false);
+    manualMode = new QLabel("Manual Mode", this);
+    manualMode->setVisible(false);
+    layoutModeItems->addWidget(updateListMode);
+    layoutModeItems->addWidget(presetMode);
+    layoutModeItems->addWidget(manualMode);
+    globalLayout->addLayout(layoutModeItems);
+
 }
 
 ClioMK3::~ClioMK3()
@@ -42,6 +75,8 @@ bool ClioMK3::init(ICANBus* canbus){
 
         connect(this->display, SIGNAL(addBlinkText(QString)), this, SLOT(updateBlinkText(QString)));
         connect(this->display, SIGNAL(stopBlinkText()), this, SLOT(stopBlinkText()));
+        connect(this->display, SIGNAL(radioIconsChanged(bool, bool, bool)), this, SLOT(radioIconsChanged(bool, bool, bool)));
+        connect(this->display, SIGNAL(modeChanged(enum AFFA2Mode)), this, SLOT(modeChanged(enum AFFA2Mode)));
 
         ClioMK3_LOG(info)<<"init success";
 
@@ -64,8 +99,58 @@ QList<QWidget *> ClioMK3::widgets()
 }
 
 void ClioMK3::updateText(QString text) {
+    updateSource(text);
     this->info->text->setText(text);
     ClioMK3_LOG(info) << "[updateText] " << text.toStdString();
+}
+
+void ClioMK3::updateSource(QString text){
+
+    enum AFFA2Source source = sourceUnknown;
+
+    if (text.isEmpty()) { /* Radio wyłączone */
+        currentSource = sourceUnknown;
+    }
+
+    if (text == "AUX         ") {
+        source = sourceAUX;
+        text = "BLUETOOTH   "; /* Podmieniamy AUX na BLUETOOTH */
+    }
+    else if ((text == "CD          ") || (text == "  LOAD CD   ") || (text.startsWith("ALB ")) || (text.startsWith("LOAD ALB ")) || (text.length() > 12)) {
+        source = sourceCD;
+    }
+    else if ((text == "CD CHANGER  ") || (text.startsWith("CD "))) {
+        source = sourceCDChanger;
+        /*if (currentSource != source) {
+            text = "USB";
+            emit radioTextChanged(text);
+        }*/
+    }
+    else if ((text == "RADIO FM    ")) {
+        source = sourceFM;
+    }
+
+    if ((currentSource != source) && (source != sourceUnknown)) {
+        currentSource = source;
+        updateSource(currentSource);
+    }
+
+}
+
+void ClioMK3::updateSource(enum AFFA2Source source) {
+    switch(source){
+        case AFFA2Source::sourceFM : this->info->source->setText("Radio");
+            break;
+        case AFFA2Source::sourceCD : this->info->source->setText("CD");
+            break;
+        case AFFA2Source::sourceCDChanger : this->info->source->setText("CD charger");
+            break;
+        case AFFA2Source::sourceAUX : this->info->source->setText("Bluetooth");
+            break;
+        case AFFA2Source::sourceUnknown : this->info->source->setText("Unknown");
+            break;
+
+    }
 }
 
 void ClioMK3::updateMenu(QString text) {
@@ -111,13 +196,13 @@ void ClioMK3::updateBlinkText(QString text){
             this->info->blink->setVisible(true);
             this->info->text->setVisible(false);
         }
-	//this->info->blink->setText(this->info->listText.at(currentBlinkPosition));
-	//currentBlinkPosition++;
-       // Premier appel on le démarre tout de suite
+	    //this->info->blink->setText(this->info->listText.at(currentBlinkPosition));
+	    //currentBlinkPosition++;
+        // Premier appel on le démarre tout de suite
         ClioMK3_LOG(error)<<"set timer";
         QTimer *timer = new QTimer(this);
         connect(timer,SIGNAL(timeout()), this, SLOT(blink()));
-	timer->setSingleShot(true);
+	    timer->setSingleShot(true);
         timer->start();
         //QTimer::singleShot(1, &blink);
     }
@@ -138,7 +223,41 @@ void ClioMK3::blink(){
         QTimer *timer = new QTimer(this);
         connect(timer,SIGNAL(timeout()), this, SLOT(blink()));
         timer->setSingleShot(true);
-        timer->start(1000);
+        timer->start(800);
         //QTimer::singleShot(500,&blink);
+    }
+}
+
+void ClioMK3::radioIconsChanged(bool news, bool traffic, bool afrds){
+    ClioMK3_LOG(error)<<"iconsChanged";
+    ClioMK3_LOG(error)<<"values "<<news<<" "<<traffic<<" "<<afrds;
+    this->info->news->setVisible(news);
+    this->info->traffic->setVisible(traffic);
+    this->info->rds->setVisible(afrds);
+    
+}
+
+void ClioMK3::modeChanged(enum AFFA2Mode mode){
+    switch(mode){
+        case AFFA2Mode::UpdateList :
+            this->info->updateListMode->setVisible(true);
+            this->info->presetMode->setVisible(false);
+            this->info->manualMode->setVisible(false);
+            break;
+        case AFFA2Mode::PresetMode :
+            this->info->updateListMode->setVisible(false);
+            this->info->presetMode->setVisible(true);
+            this->info->manualMode->setVisible(false);
+            break;
+        case AFFA2Mode::ManualMode :
+            this->info->updateListMode->setVisible(false);
+            this->info->presetMode->setVisible(false);
+            this->info->manualMode->setVisible(true);
+            break;
+        default:
+            this->info->updateListMode->setVisible(false);
+            this->info->presetMode->setVisible(false);
+            this->info->manualMode->setVisible(false);
+            break;
     }
 }
