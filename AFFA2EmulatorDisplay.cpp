@@ -80,30 +80,32 @@ void AFFA2EmulatorDisplay::getText(QByteArray frame) {
             fullscreen = ((location & 0x02) == 0x02);
 
             if ((max > 0) && (fullscreen) && (!selected)) { /* Texte clignotant (np. NEWS -> RMF FM -> NEWS...) */
-               //AFFA2_LOG(info) << "texte clignotant " << text.toStdString() << " not selected";
+               AFFA2_LOG(info) << "texte clignotant " << text.toStdString();
+               emit addBlinkText(text);
             }
             else {
-               //AFFA2_LOG(info) << "else texte clignotant" << text.toStdString() << " selected";
+               AFFA2_LOG(info) << "stop texte clignotant ";
+               emit stopBlinkText();
             }
 
             if ((max > 0) && (!fullscreen)) { /* Mode menu */
                 if (!_menuVisible) {
-                    AFFA2_LOG(info)<<"afficher menu";
+                    //AFFA2_LOG(info)<<"afficher menu";
                     emit displayMenuShow();
                     _menuVisible = true;
                 }
 
                 //emit displayMenuItemUpdate(idx, text, selected);
                 if(selected){
-                    AFFA2_LOG(info)<<"update menu";
+                    //AFFA2_LOG(info)<<"update menu";
                     emit displayMenuItemUpdate(text);
                 }
 
-                AFFA2_LOG(info) << "display menu item update " << text.toStdString() << " " << selected;
+                //AFFA2_LOG(info) << "display menu item update " << text.toStdString() << " " << selected;
                 return;
             }
             else { /* Menu invisible */
-                AFFA2_LOG(info)<<"menu invisible";
+                //AFFA2_LOG(info)<<"menu invisible";
                 if (_menuVisible) {
                     emit displayMenuHide();
                     _menuVisible = false;

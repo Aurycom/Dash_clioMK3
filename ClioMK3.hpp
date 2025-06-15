@@ -10,6 +10,7 @@
 #include "AAHandler.hpp"
 #include "plugins/vehicle_plugin.hpp"
 #include "AFFA2EmulatorDisplay.hpp"
+#include <QTimer>
 
 #define ClioMK3_LOG(severity) BOOST_LOG_TRIVIAL(severity) << "[ClioMK3Plugin] "
 
@@ -48,6 +49,8 @@ class InfoWindow : public QWidget {
         InfoWindow(Arbiter &arbiter, QWidget *parent = nullptr);
         QLabel* text;
         QLabel* menu;
+        QLabel* blink;
+        QList<QString> listText;
 };
 
 class ClioMK3 : public QObject, VehiclePlugin
@@ -60,17 +63,24 @@ class ClioMK3 : public QObject, VehiclePlugin
         ~ClioMK3();
         bool init(ICANBus* canbus) override;
 		QList<QWidget *> widgets() override;
+        
     private:
 		AFFA2EmulatorDisplay *display;
         AAHandler *aa_handler;
         Vehicle *vehicle;
         InfoWindow *info;
+        
+        int currentBlinkPosition;
 
     public slots:
       void updateText(QString text);
       void updateMenu(QString text);
       void showMenu();
       void hideMenu();
+      void startBlinkText(QString text);
+      void stopBlinkText();
+      void updateBlinkText(QString text);
+      void blink();
 
 };
 

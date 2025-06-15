@@ -25,5 +25,7 @@ class AFFA2EmulatorDisplay : public QObject
         void displayMenuItemUpdate(QString text);
         void displayMenuShow();
         void displayMenuHide();
+        void addBlinkText(QString text);
+        void stopBlinkText();
 
 };
