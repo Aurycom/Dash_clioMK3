@@ -1,5 +1,11 @@
-#include <QObject>
-#include <QThread>
+#pragma once 
+
+#include <QString>
+#include <iostream>
+#include <QWidget>
+#include <stdlib.h>
+#include <QByteArray>
+#include <boost/log/trivial.hpp>
 
 /* Icônes sur l'écran */
 #define DISPLAY_ICON_NO_NEWS       (1 << 0)
@@ -30,14 +36,37 @@
 
 #define CAN_ID_REPLY_FLAG          0x400  /* Indicateur défini pour la réponse */
 
-class AFFA2Emulator : public QObject {
+enum AFFA2Mode {
+    UpdateList = 0,
+    PresetMode,
+    ManualMode,
+    unknownMode
+};
+
+#define AFFA2_LOG(severity) BOOST_LOG_TRIVIAL(severity) << "[AFFA2] "
+
+class AFFA2EmulatorDisplay : public QObject
+{
     
     Q_OBJECT
     
     private:
-
+        bool _menuVisible;
+        enum AFFA2Mode currentMode;
     public:
-        AFFA2Emulator() {};
-        ~AFFA2Emulator();
+        AFFA2EmulatorDisplay() {_menuVisible=false; currentMode=AFFA2Mode::unknownMode;};
+        //~AFFA2Emulator();
+        void getText(QByteArray payload);
+        void displayIconsChanged(int mask);
+        void displayModeChanged(int mask);
+    signals:
+        void displayTextChanged(QString text);
+        void displayMenuItemUpdate(QString text, bool selected);
+        void displayMenuShow();
+        void displayMenuHide();
+        void addBlinkText(QString text);
+        void stopBlinkText();
+        void radioIconsChanged(bool news, bool traffic, bool afrds);
+        void modeChanged(enum AFFA2Mode mode);
 
-}
+};
